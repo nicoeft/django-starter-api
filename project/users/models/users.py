@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
@@ -41,6 +43,12 @@ class User(BaseModel, AbstractUser):
         "verified",
         default=True,
         help_text="Set to true when the user have verified its email address.",
+    )
+
+    issued_at = models.DateTimeField(
+        "issued at",
+        auto_now_add=True,
+        help_text="Date time after wich tokens are valid .",
     )
 
     class Meta:

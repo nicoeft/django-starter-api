@@ -12,6 +12,7 @@ from project.users.serializers.profiles import ProfileModelSerializer
 
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
 jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
+jwt_decode_handler = api_settings.JWT_DECODE_HANDLER
 
 
 class UserModelSerializer(serializers.ModelSerializer):
@@ -111,9 +112,7 @@ class TokenSerialiser(serializers.Serializer):
 
     def validate_token(self, data):
         try:
-            payload = jwt.decode(
-                data, settings.SECRET_KEY, algorithms=["HS256"]
-            )
+            payload = jwt_decode_handler(data)
         except jwt.ExpiredSignatureError:
             raise serializers.ValidationError("Verification link has expired.")
         except jwt.PyJWTError:

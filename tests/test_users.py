@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 import pytest
 import json
 import jwt
@@ -221,4 +223,25 @@ def test_user_token__infinite_refresh__invalid(create_user):
             data=json.dumps({"token": token}),
         )
         token = response.json()["token"]
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.django_db
+def test_user_token__issued_at_revoke__invalid(create_user,login_user):
+    token = "JWT " + login_user
+    c = Client(HTTP_AUTHORIZATION=token)
+
+    jwt_revocation_dt = datetime.utcnow() + timedelta(days=1)
+    _ = c.patch(
+        reverse("users-detail", kwargs={"pk": create_user["id"]}),
+        content_type="application/json",
+        data=json.dumps({"issued_at": jwt_revocation_dt.strftime('%Y-%m-%d %H:%M:%S%z')}),
+    )
+
+    response = c.post(
+        reverse("users-token-verify"),
+        content_type="application/json",
+        data=json.dumps({"token": token}),
+    )
+
     assert response.status_code == status.HTTP_400_BAD_REQUEST

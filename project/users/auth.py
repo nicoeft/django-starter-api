@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from calendar import timegm
 from datetime import datetime
 
+from jwt import InvalidTokenError
 from rest_framework_jwt.compat import get_username
 from rest_framework_jwt.compat import get_username_field
 from rest_framework_jwt.settings import api_settings
@@ -75,7 +76,7 @@ def jwt_decode_handler(token):
     # get user from token, BEFORE verification, to get user secret key
     unverified_payload = jwt.decode(token, None, False)
     secret_key = jwt_get_secret_key(unverified_payload)
-    return jwt.decode(
+    verified_payload = jwt.decode(
         token,
         api_settings.JWT_PUBLIC_KEY or secret_key,
         api_settings.JWT_VERIFY,
@@ -85,6 +86,15 @@ def jwt_decode_handler(token):
         issuer=api_settings.JWT_ISSUER,
         algorithms=[api_settings.JWT_ALGORITHM],
     )
+    print(verified_payload)
+    User = get_user_model()  # noqa: N806
+    user = User.objects.get(pk=verified_payload.get("id"))
+    user_issued_at = timegm(user.issued_at.utctimetuple())
+    print(user_issued_at)
+    print(verified_payload.get('orig_iat'))
+    if verified_payload.get('orig_iat') < user_issued_at:
+        raise InvalidTokenError()
+    return verified_payload
 
 
 def jwt_response_payload_handler(token, user=None, request=None):
