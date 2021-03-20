@@ -28,7 +28,7 @@ def jwt_get_secret_key(payload=None):
     return api_settings.JWT_SECRET_KEY
 
 
-def jwt_payload_handler(user):
+def jwt_payload_handler(user, orig_iat=None):
     username_field = get_username_field()
     username = get_username(user)
 
@@ -47,7 +47,7 @@ def jwt_payload_handler(user):
     # Include original issued at time for a brand new token,
     # to allow token refresh
     if api_settings.JWT_ALLOW_REFRESH:
-        payload["orig_iat"] = timegm(datetime.utcnow().utctimetuple())
+        payload["orig_iat"] = orig_iat or timegm(datetime.utcnow().utctimetuple())
 
     if api_settings.JWT_AUDIENCE is not None:
         payload["aud"] = api_settings.JWT_AUDIENCE

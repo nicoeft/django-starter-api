@@ -182,8 +182,9 @@ def test_user_token__refresh(create_user):
     assert response.status_code == status.HTTP_200_OK
 
 
+# TODO: improve test, monkeypatch datetime
 @pytest.mark.django_db
-def test_user_token__refresh__invalid(create_user):
+def test_user_token__expiry_refresh__invalid(create_user):
     c = Client()
     response = c.post(
         reverse("users-login"),
@@ -191,7 +192,7 @@ def test_user_token__refresh__invalid(create_user):
         data=json.dumps({"email": EMAIL, "password": PASSWORD}),
     )
     token = response.json()["token"]
-    # TODO: improve test, monkeypatch datetime
+
     time.sleep(5)
     response = c.post(
         reverse("users-token-refresh"),
@@ -199,4 +200,25 @@ def test_user_token__refresh__invalid(create_user):
         data=json.dumps({"token": token}),
     )
 
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+# TODO: improve test, monkeypatch datetime
+@pytest.mark.django_db
+def test_user_token__infinite_refresh__invalid(create_user):
+    c = Client()
+    response = c.post(
+        reverse("users-login"),
+        content_type="application/json",
+        data=json.dumps({"email": EMAIL, "password": PASSWORD}),
+    )
+    token = response.json()["token"]
+    for _ in range(3):
+        time.sleep(2)
+        response = c.post(
+            reverse("users-token-refresh"),
+            content_type="application/json",
+            data=json.dumps({"token": token}),
+        )
+        token = response.json()["token"]
     assert response.status_code == status.HTTP_400_BAD_REQUEST

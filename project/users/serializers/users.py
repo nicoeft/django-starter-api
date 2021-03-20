@@ -133,4 +133,4 @@ class TokenSerialiser(serializers.Serializer):
     def save(self):
         payload = self.context["payload"]
         user = User.objects.get(email=payload["email"])
-        return jwt_encode_handler(jwt_payload_handler(user))
+        return jwt_encode_handler(jwt_payload_handler(user, payload.get('orig_iat')))
