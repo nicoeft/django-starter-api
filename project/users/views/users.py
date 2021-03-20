@@ -56,7 +56,7 @@ class UserViewSet(
 
     @action(detail=False, methods=["post"], url_path="token/refresh")
     def token_refresh(self, request):
-        token_refresh = TokenSerialiser(data=request.data)
+        token_refresh = TokenSerialiser(data=request.data, context={'is_refresh_token': True})
         token_refresh.is_valid(raise_exception=True)
         token = token_refresh.save()
         return Response({"token": token})

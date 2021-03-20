@@ -150,7 +150,6 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "project.exceptions.custom_exception_handler",
 }
 
-
 JWT_AUTH = {
     "JWT_ENCODE_HANDLER": "project.users.auth.jwt_encode_handler",
     "JWT_DECODE_HANDLER": "project.users.auth.jwt_decode_handler",
@@ -168,7 +167,7 @@ JWT_AUTH = {
     "JWT_AUDIENCE": None,
     "JWT_ISSUER": None,
     "JWT_ALLOW_REFRESH": True,
-    "JWT_REFRESH_EXPIRATION_DELTA": datetime.timedelta(days=7),
+    "JWT_REFRESH_EXPIRATION_DELTA": datetime.timedelta(seconds=5),  # Changed to 5 seconds for easier tests
     "JWT_AUTH_HEADER_PREFIX": "JWT",
     "JWT_AUTH_COOKIE": None,
 }

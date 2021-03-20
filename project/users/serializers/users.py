@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import jwt
 from django.conf import settings
 from django.contrib.auth import password_validation, authenticate
@@ -116,9 +118,17 @@ class TokenSerialiser(serializers.Serializer):
             raise serializers.ValidationError("Verification link has expired.")
         except jwt.PyJWTError:
             raise serializers.ValidationError("Invalid token")
-
+        self.validate_refresh(payload)
         self.context["payload"] = payload
         return data
+
+    def validate_refresh(self, payload):
+        is_refresh_token = self.context.get("is_refresh_token", False)
+        if api_settings.JWT_ALLOW_REFRESH and is_refresh_token:
+            orig_iat_dt = datetime.utcfromtimestamp(payload.get('orig_iat'))
+            refresh_expiry_dt = orig_iat_dt + api_settings.JWT_REFRESH_EXPIRATION_DELTA
+            if refresh_expiry_dt <= datetime.utcnow():
+                raise serializers.ValidationError("Refresh token expired")
 
     def save(self):
         payload = self.context["payload"]

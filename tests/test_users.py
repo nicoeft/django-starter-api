@@ -7,7 +7,7 @@ from django.urls import reverse
 from rest_framework import status
 from project.users.models.users import User
 from constants import PASSWORD, EMAIL, USERNAME, FIRST_NAME, LAST_NAME
-
+import time
 
 @pytest.mark.django_db
 def test_user_login(create_user):
@@ -180,3 +180,23 @@ def test_user_token__refresh(create_user):
     )
 
     assert response.status_code == status.HTTP_200_OK
+
+
+@pytest.mark.django_db
+def test_user_token__refresh__invalid(create_user):
+    c = Client()
+    response = c.post(
+        reverse("users-login"),
+        content_type="application/json",
+        data=json.dumps({"email": EMAIL, "password": PASSWORD}),
+    )
+    token = response.json()["token"]
+    # TODO: improve test, monkeypatch datetime
+    time.sleep(5)
+    response = c.post(
+        reverse("users-token-refresh"),
+        content_type="application/json",
+        data=json.dumps({"token": token}),
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
