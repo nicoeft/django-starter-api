@@ -11,6 +11,8 @@ from rest_framework_jwt.compat import get_username
 from rest_framework_jwt.compat import get_username_field
 from rest_framework_jwt.settings import api_settings
 
+from project.users.models.deniedtokens import DeniedToken
+
 
 def jwt_get_secret_key(payload=None):
     """
@@ -86,15 +88,21 @@ def jwt_decode_handler(token):
         issuer=api_settings.JWT_ISSUER,
         algorithms=[api_settings.JWT_ALGORITHM],
     )
-    print(verified_payload)
     User = get_user_model()  # noqa: N806
     user = User.objects.get(pk=verified_payload.get("id"))
     user_issued_at = timegm(user.issued_at.utctimetuple())
-    print(user_issued_at)
-    print(verified_payload.get('orig_iat'))
     if verified_payload.get('orig_iat') < user_issued_at:
         raise InvalidTokenError()
-    return verified_payload
+    try:
+        if isinstance(token, bytes):
+            token = token.decode()
+        token_denied = user.denied_tokens.get(token=token)
+        if token_denied:
+            raise InvalidTokenError()
+    except DeniedToken.DoesNotExist:
+        return verified_payload
+
+
 
 
 def jwt_response_payload_handler(token, user=None, request=None):

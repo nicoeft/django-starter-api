@@ -35,6 +35,7 @@ class UserViewSet(
             "signup",
             "token_verify",
             "token_refresh",
+            "token_deny",
         ],
     }
 
@@ -69,6 +70,15 @@ class UserViewSet(
         token = token_refresh.data["token"]
 
         return Response({"token": token})
+
+    @action(detail=False, methods=["post"], url_path="token/deny")
+    def token_deny(self, request):
+        token_deny = TokenSerialiser(data=request.data)
+        token_deny.is_valid(raise_exception=True)
+
+        denied_token = token_deny.deny()
+
+        return Response({"denied_token": denied_token})
 
     @action(detail=True, methods=["put", "patch"])
     def profile(self, request, *args, **kwargs):

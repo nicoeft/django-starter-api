@@ -8,6 +8,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from rest_framework_jwt.settings import api_settings
 from project.users.models import User, Profile
+from project.users.models.deniedtokens import DeniedToken
 from project.users.serializers.profiles import ProfileModelSerializer
 
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
@@ -119,6 +120,7 @@ class TokenSerialiser(serializers.Serializer):
             raise serializers.ValidationError("Invalid token")
         self.validate_refresh(payload)
         self.context["payload"] = payload
+        self.context["token"] = data
         return data
 
     def validate_refresh(self, payload):
@@ -133,3 +135,9 @@ class TokenSerialiser(serializers.Serializer):
         payload = self.context["payload"]
         user = User.objects.get(email=payload["email"])
         return jwt_encode_handler(jwt_payload_handler(user, payload.get('orig_iat')))
+
+    def deny(self):
+        payload = self.context["payload"]
+        token = self.context["token"]
+        denied_token, _ = DeniedToken.objects.get_or_create(user_id=payload["id"], token=token)
+        return denied_token.token
