@@ -11,6 +11,7 @@ from project.users.models.users import User
 from constants import PASSWORD, EMAIL, USERNAME, FIRST_NAME, LAST_NAME
 import time
 
+
 @pytest.mark.django_db
 def test_user_login(create_user):
     c = Client()
@@ -227,7 +228,7 @@ def test_user_token__infinite_refresh__invalid(create_user):
 
 
 @pytest.mark.django_db
-def test_user_token__issued_at_revoke__invalid(create_user,login_user):
+def test_user_token__issued_at_revoke__invalid(create_user, login_user):
     token = "JWT " + login_user
     c = Client(HTTP_AUTHORIZATION=token)
 
@@ -248,21 +249,39 @@ def test_user_token__issued_at_revoke__invalid(create_user,login_user):
 
 
 @pytest.mark.django_db
-def test_user_token__deny(create_user,login_user):
-    token = "JWT " + login_user
-    c = Client(HTTP_AUTHORIZATION=token)
-
-    jwt_revocation_dt = datetime.utcnow() + timedelta(days=1)
-    _ = c.patch(
-        reverse("users-detail", kwargs={"pk": create_user["id"]}),
-        content_type="application/json",
-        data=json.dumps({"issued_at": jwt_revocation_dt.strftime('%Y-%m-%d %H:%M:%S%z')}),
-    )
+def test_user_token__deny(create_user, login_user):
+    c = Client(HTTP_AUTHORIZATION="JWT " + login_user)
 
     response = c.post(
-        reverse("users-token-verify"),
+        reverse("users-token-deny"),
         content_type="application/json",
-        data=json.dumps({"token": token}),
+        data=json.dumps({"token": login_user}),
     )
 
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()['denied_token'] == login_user
+
+
+@pytest.mark.django_db
+def test_user_token__deny(create_user, login_user):
+    c = Client(HTTP_AUTHORIZATION="JWT " + login_user)
+
+    response = c.post(
+        reverse("users-token-deny"),
+        content_type="application/json",
+        data=json.dumps({"token": login_user}),
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()['denied_token'] == login_user
+
+
+@pytest.mark.django_db
+def test_user_retrieve__denied_token__unauthorized(create_user, login_user, deny_token):
+    c = Client(HTTP_AUTHORIZATION=deny_token)
+
+    response = c.get(
+        reverse("users-detail", kwargs={"pk": create_user["id"]}),
+        content_type="application/json",
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED

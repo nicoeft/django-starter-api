@@ -91,3 +91,18 @@ def login_secondary_user(create_secondary_user):
     body = response.json()
 
     return body["token"]
+
+
+@pytest.fixture
+@pytest.mark.django_db
+def deny_token(login_user):
+    c = Client()
+
+    response = c.post(
+        reverse("users-token-deny"),
+        content_type="application/json",
+        data=json.dumps({"token": login_user}),
+    )
+    body = response.json()
+
+    return body["denied_token"]
